@@ -5,16 +5,17 @@ module AutoSelectable
   def auto_select(*fields)
     options = fields.extract_options!
 
-    # The @resource instance variable seems unavailable in versions 
+    # The @resource instance variable seems unavailable in versions
     # later than 1.0.0.pre1 of the ActiveAdmin.
     resource = @resource || self.config.resource_class_name.constantize
-    
+    # resource = "Practitioner"
+
     create_collection_action(fields, options, resource)
   end
 
   def create_collection_action(fields, options, resource)
     collection_action :autoselect, :method => :get do
-      select_fields = "#{resource.table_name}.id, " << fields.join(', ')
+      select_fields = "id, " << fields.join(', ')
       if (Module.const_get(:CanCanCan) rescue false) ? authorized?(:read, resource) :true
         term = params[:q].to_s
         term.gsub!('%', '\\\%')
@@ -40,17 +41,17 @@ module AutoSelectable
            render json: resources and return
         else
           concat_fields = fields.join(" || ' '::text || ")
-          concat_cols = "((#{concat_fields})" <<  " || ' '::text || #{resource.table_name}.id::text)"
-
-          similarity_sql = ActiveRecord::Base.send(:sanitize_sql_array,
-              ["(similarity(#{resource.table_name}.id::text, :id) + similarity(#{concat_cols}, :id))", id: term])
+          # concat_cols = "((#{concat_fields})" <<  " || ' '::text || #{resource.table_name}.id::text)"
+          # #
+          # similarity_sql = ActiveRecord::Base.send(:sanitize_sql_array,
+          #     ["similarity(#{concat_cols}, :id))", id: term])
 
           resource_records = effective_scope.call.
-            select(select_fields << ", #{similarity_sql} as similarity").
-            where("#{concat_cols} ILIKE :term", term: "%#{first_term}%").
-            order("#{similarity_sql} DESC").
-            limit(15).offset(offset).
-            map { |r| r.attributes.reject { |a| a == 'similarity'} }
+            select(select_fields).
+            where("#{fields.join(', ')} ILIKE :term", term: "#{first_term}%").
+            where(studio: current_admin_user.studio).
+            order("name").
+            limit(15).offset(offset)
         end
 
         render json: resource_records
