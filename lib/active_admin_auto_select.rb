@@ -48,7 +48,7 @@ module AutoSelectable
 
           resource_records = effective_scope.call.
             select(select_fields).
-            where("#{fields.join(', ')} ILIKE :term", term: "#{first_term}%").
+            where("#{fields.join(', ')} ILIKE :term", term: "%#{first_term}%").
             where(studio: current_admin_user.studio).
             order("name").
             limit(15).offset(offset)
