@@ -45,11 +45,11 @@ module AutoSelectable
           # #
           # similarity_sql = ActiveRecord::Base.send(:sanitize_sql_array,
           #     ["similarity(#{concat_cols}, :id))", id: term])
-
+          studio = (current_admin_user.super_admin?) ? Studio.all : current_admin_user.studio
           resource_records = effective_scope.call.
             select(select_fields).
             where("#{concat_fields} ILIKE :term", term: "%#{first_term}%").
-            where(studio: current_admin_user.studio).
+            where(studio: studio).
             order("name").
             limit(15).offset(offset)
         end
