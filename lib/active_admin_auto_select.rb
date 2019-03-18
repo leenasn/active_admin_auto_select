@@ -25,9 +25,17 @@ module AutoSelectable
           options["default_scope"] || -> { resource }
 
         # This param exists when we have a filtered result
-        Rails
         if params[:ids].present?
-          if params[:ids].first.to_i != 0
+          if params[:tags].present?
+            tags = ActsAsTaggableOn::Tag.where("name IN (?)",
+              params[:ids].collect do | id |
+                id.gsub("[", "").gsub("]", "").gsub("\"", "").gsub(",", "")
+              end
+            )
+            resources = tags.collect.each do | tag |
+              { id: tag.id, name: tag.name.humanize }
+            end
+          else
             resources = effective_scope.call.
               where("#{resource.table_name}.id IN (?)", params[:ids]).
               select(select_fields)
@@ -36,31 +44,20 @@ module AutoSelectable
             else
               resources = resources.sort_by { |r| params[:ids].index(r.id.to_s) }
             end
-          else
-            Rails.logger.debug "tags #{params[:ids].first}"
-            tags = resource.where("tag IN (?)", params[:ids].first.split(",")).send(:all_tags)
-            resources = []
-            tags.each do | tag |
-              resources << { id: "", name: tag.humanize }
-            end
-            Rails.logger.debug "resources #{resources}"
           end
           render json: resources
           return
         else
-          Rails.logger.debug "options #{options}"
           concat_fields = fields.join(" || ' '::text || ")
           studio = current_admin_user.super_admin? ? Studio.all : current_admin_user.studio
-          # Rails.logger.debug "scope #{params[:scope]} #{params[:scope] == 'tags'}"
           if params[:scope] == "tags"
-            tags = resource.where("tag LIKE '%#{term}%'").send(:all_tags)
-            # resource_records = effective_scope.
-            #   where("tag LIKE %#{term}%")
-            resource_records = []
-            tags.each do | tag |
-              resource_records << { id: "", name: tag.humanize }
+            tags = ActsAsTaggableOn::Tag.
+              where("lower(name) ILIKE '%#{term}%'").
+              select(:id, :name)
+              .order("name")
+            resource_records = tags.collect.each do | tag |
+              { id: tag.id, name: tag.name.humanize }
             end
-            # render resource_records.to_json
           else
             resource_records = effective_scope.call
                            .select(select_fields)
