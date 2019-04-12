@@ -51,8 +51,8 @@ module AutoSelectable
           concat_fields = fields.join(" || ' '::text || ")
           studio = current_admin_user.super_admin? ? Studio.all : current_admin_user.studio
           if params[:scope] == "tags"
-            tags = ActsAsTaggableOn::Tag.
-              where("lower(name) ILIKE '%#{term}%'").
+            tags = Customer.where(studio: studio).all_tags.
+              where("lower(name) ILIKE '%#{term}%' AND name != 'imported'").
               select(:id, :name)
               .order("name")
             resource_records = tags.collect.each do | tag |
