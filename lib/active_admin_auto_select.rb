@@ -16,7 +16,7 @@ module AutoSelectable
       # Rails.logger.debug "options #{options}"
       select_fields = "id, " << fields.join(", ")
       if (Module.const_get(:CanCanCan) rescue false) ? authorized?(:read, resource) : true
-        term = params[:q].to_s
+        term = params[:q].to_s.dup
         term.gsub!("%", "\\\%")
         term.gsub!("_", "\\\_")
         page = params[:page].try(:to_i)
