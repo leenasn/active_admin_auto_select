@@ -36,8 +36,14 @@ module AutoSelectable
               { id: tag.id, name: tag.name.humanize }
             end
           else
+            ids = params[:ids]
+            if ids.is_a?(String)
+              ids = params[:ids].gsub(/[^0-9,]/i, "0")
+            elsif ids.is_a?(Array)
+              ids = params[:ids].collect(&:to_i)
+            end
             resources = effective_scope.call.
-              where("#{resource.table_name}.id IN (?)", params[:ids]).
+              where("#{resource.table_name}.id IN (?)", ids).
               select(select_fields)
             if resources.size == 1
               resources = resources.first
