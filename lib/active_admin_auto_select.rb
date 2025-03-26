@@ -7,7 +7,7 @@ module AutoSelectable
 
     # The @resource instance variable seems unavailable in versions
     # later than 1.0.0.pre1 of the ActiveAdmin.
-    resource = @resource || self.config.resource_class_name.constantize
+    resource = self.resource_class
     create_collection_action(fields, options, resource)
   end
 
